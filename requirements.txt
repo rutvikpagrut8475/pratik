@@ -1,0 +1,25 @@
+Project Requirements and Complete Workflow
+Project Overview
+This project is a Python-based console application that manages products stored in a glossary database using SQLite. Users can view available products, add new products, and generate a bill. The project avoids using HTML or any web frontend by providing a terminal-based interface for user interaction.
+
+Project Requirements
+Environment:
+
+Python 3.x installed on the system.
+SQLite3 (comes bundled with Python).
+tabulate library for formatting tables:
+bash
+Copy code
+pip install tabulate
+Database:
+
+SQLite database (glossary.db) is used to store product details such as product name, price, and quantity.
+Products are managed using SQL operations (INSERT, UPDATE, SELECT).
+Functional Requirements:
+
+View the list of available products with their details.
+Add new products to the database with the product's name, price, and stock quantity.
+Generate a bill summary by selecting products from the database and updating their quantities.
+Handle invalid inputs and stock shortages gracefully.
+Workflow of the Project
+
