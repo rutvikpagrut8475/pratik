@@ -9,7 +9,7 @@ cursor = conn.cursor()
 cursor.execute('''
     CREATE TABLE IF NOT EXISTS products (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
+        name TEXT NOT NULL UNIQUE,  -- Ensure product names are unique
         price REAL NOT NULL,
         quantity INTEGER NOT NULL
     )
@@ -25,16 +25,73 @@ def view_items():
         print("No items available in the glossary.")
 
 def add_item():
-    name = input("Enter product name: ")
+    name = input("Enter product name: ").strip()
     price = float(input("Enter product price: "))
     quantity = int(input("Enter product quantity: "))
-    
+
+    # Check if the product already exists
+    cursor.execute('SELECT * FROM products WHERE name = ?', (name,))
+    existing_item = cursor.fetchone()
+
+    if existing_item:
+        # Update the product's price and quantity
+        cursor.execute('''
+            UPDATE products
+            SET price = ?, quantity = quantity + ?
+            WHERE name = ?
+        ''', (price, quantity, name))
+        conn.commit()
+        print(f"{name} updated successfully! New Quantity: {existing_item[3] + quantity}, Price: {price}")
+    else:
+        # Insert the new product if it doesn't exist
+        cursor.execute('''
+            INSERT INTO products (name, price, quantity)
+            VALUES (?, ?, ?)
+        ''', (name, price, quantity))
+        conn.commit()
+        print(f"{name} added successfully!")
+
+def delete_item():
+    view_items()
+    item_id = input("\nEnter the ID of the product to delete: ")
+
+    # Check if the item exists
+    cursor.execute('SELECT * FROM products WHERE id = ?', (item_id,))
+    item = cursor.fetchone()
+
+    if item:
+        cursor.execute('DELETE FROM products WHERE id = ?', (item_id,))
+        conn.commit()
+        print(f"{item[1]} deleted successfully!")
+        rearrange_ids()  # Call to rearrange IDs after deletion
+    else:
+        print("Invalid product ID. Please try again.")
+
+def rearrange_ids():
+    # Get all the current data
+    cursor.execute('SELECT name, price, quantity FROM products')
+    items = cursor.fetchall()
+
+    # Drop the original table
+    cursor.execute('DROP TABLE IF EXISTS products')
+
+    # Recreate the table
     cursor.execute('''
+        CREATE TABLE products (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE,
+            price REAL NOT NULL,
+            quantity INTEGER NOT NULL
+        )
+    ''')
+
+    # Reinsert data with sequential IDs
+    cursor.executemany('''
         INSERT INTO products (name, price, quantity)
         VALUES (?, ?, ?)
-    ''', (name, price, quantity))
+    ''', items)
+    
     conn.commit()
-    print(f"{name} added successfully!")
 
 def generate_bill():
     bill_items = []
@@ -78,7 +135,8 @@ def main():
         print("1. View Items")
         print("2. Add Item")
         print("3. Generate Bill")
-        print("4. Exit")
+        print("4. Delete Item")
+        print("5. Exit")
 
         choice = input("Enter your choice: ")
         if choice == '1':
@@ -86,8 +144,11 @@ def main():
         elif choice == '2':
             add_item()
         elif choice == '3':
+            view_items()
             generate_bill()
         elif choice == '4':
+            delete_item()
+        elif choice == '5':
             print("Exiting...")
             break
         else:
